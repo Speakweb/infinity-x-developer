@@ -1,43 +1,45 @@
 {
-  "name": "Speakweb",
-  "displayName": "InfinityXDeveloper",
-  "description": "Use LLMs for programming",
+  "name": "speakweb",
+  "displayName": "Speakweb",
+  "description": "VS Code extension for displaying selected text",
   "version": "0.0.1",
+  "publisher": "YourPublisherName",
   "engines": {
-    "vscode": "^1.78.0"
+      "vscode": "^1.0.0"
   },
   "categories": [
-    "Other"
+      "Other"
   ],
-  "activationEvents": [],
+  "activationEvents": [
+      "onCommand:extension.showSelectedText"
+  ],
   "main": "./out/extension.js",
   "contributes": {
-    "commands": [
-      {
-        "command": "Speakweb.helloWorld",
-        "title": "Hello World"
-      }
-    ]
+      "commands": [
+          {
+              "command": "extension.showSelectedText",
+              "title": "Show Selected Text"
+          }
+      ]
   },
   "scripts": {
-    "vscode:prepublish": "npm run compile",
-    "compile": "tsc -p ./",
-    "watch": "tsc -watch -p ./",
-    "pretest": "npm run compile && npm run lint",
-    "lint": "eslint src --ext ts",
-    "test": "node ./out/test/runTest.js"
+      "vscode:prepublish": "npm run compile",
+      "compile": "tsc -p ./",
+      "watch": "tsc -watch -p ./",
+      "pretest": "npm run compile",
+      "test": "node ./out/test/runTest.js"
   },
   "devDependencies": {
-    "@types/vscode": "^1.78.0",
-    "@types/glob": "^8.1.0",
-    "@types/mocha": "^10.0.1",
-    "@types/node": "16.x",
-    "@typescript-eslint/eslint-plugin": "^5.59.1",
-    "@typescript-eslint/parser": "^5.59.1",
-    "eslint": "^8.39.0",
-    "glob": "^8.1.0",
-    "mocha": "^10.2.0",
-    "typescript": "^5.0.4",
-    "@vscode/test-electron": "^2.3.0"
+      "@types/glob": "^7.1.1",
+      "@types/mocha": "^5.2.6",
+      "@types/node": "^10.12.18",
+      "@typescript-eslint/eslint-plugin": "^2.33.0",
+      "@typescript-eslint/parser": "^2.33.0",
+      "eslint": "^6.8.0",
+      "glob": "^7.1.6",
+      "mocha": "^6.2.2",
+      "typescript": "^3.7.2",
+      "vscode": "^1.0.0",
+      "vscode-test": "^1.1.2"
   }
 }
