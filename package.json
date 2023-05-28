@@ -5,41 +5,50 @@
   "version": "0.0.1",
   "publisher": "YourPublisherName",
   "engines": {
-      "vscode": "^1.0.0"
+    "vscode": "^1.0.0"
   },
   "categories": [
-      "Other"
+    "Other"
   ],
   "activationEvents": [
-      "onCommand:extension.showSelectedText"
+    "onCommand:extension.showSelectedText"
   ],
   "main": "./out/extension.js",
   "contributes": {
-      "commands": [
-          {
-              "command": "extension.showSelectedText",
-              "title": "Show Selected Text"
-          }
-      ]
+    "commands": [
+      {
+        "command": "extension.showSelectedText",
+        "title": "Send Selected Text to ChatGPT"
+      }
+    ]
   },
   "scripts": {
-      "vscode:prepublish": "npm run compile",
-      "compile": "tsc -p ./",
-      "watch": "tsc -watch -p ./",
-      "pretest": "npm run compile",
-      "test": "node ./out/test/runTest.js"
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "pretest": "npm run compile",
+    "test": "node ./out/test/runTest.js"
   },
   "devDependencies": {
-      "@types/glob": "^7.1.1",
-      "@types/mocha": "^5.2.6",
-      "@types/node": "^10.12.18",
-      "@typescript-eslint/eslint-plugin": "^2.33.0",
-      "@typescript-eslint/parser": "^2.33.0",
-      "eslint": "^6.8.0",
-      "glob": "^7.1.6",
-      "mocha": "^6.2.2",
-      "typescript": "^3.7.2",
-      "vscode": "^1.0.0",
-      "vscode-test": "^1.1.2"
+    "@types/dotenv-safe": "^8.1.2",
+    "@types/glob": "^7.1.1",
+    "@types/mocha": "^5.2.6",
+    "@types/node": "^10.12.18",
+    "@typescript-eslint/eslint-plugin": "^2.33.0",
+    "@typescript-eslint/parser": "^2.33.0",
+    "eslint": "^6.8.0",
+    "esm": "^3.2.25",
+    "glob": "^7.1.6",
+    "mocha": "^6.2.2",
+    "typescript": "^3.7.2",
+    "vscode": "^1.0.0",
+    "vscode-test": "^1.1.2"
+  },
+  "dependencies": {
+    "@vscode/test-electron": "^2.3.2",
+    "dotenv-safe": "^8.2.0",
+    "execa": "^7.1.1",
+    "openai": "^3.2.1",
+    "ora": "^6.3.1"
   }
 }
