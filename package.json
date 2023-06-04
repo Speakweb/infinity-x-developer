@@ -10,14 +10,11 @@
   "categories": [
     "Other"
   ],
-  "activationEvents": [
-    "onCommand:extension.showSelectedText"
-  ],
   "main": "./out/extension.js",
   "contributes": {
     "commands": [
       {
-        "command": "extension.showSelectedText",
+        "command": "extension.modifySelectedText",
         "title": "Send Selected Text to ChatGPT"
       }
     ]
@@ -45,7 +42,9 @@
     "vscode-test": "^1.1.2"
   },
   "dependencies": {
+    "@types/diff-match-patch": "^1.0.32",
     "@vscode/test-electron": "^2.3.2",
+    "diff-match-patch": "^1.0.5",
     "dotenv-safe": "^8.2.0",
     "execa": "^7.1.1",
     "openai": "^3.2.1",

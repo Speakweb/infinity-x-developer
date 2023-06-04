@@ -1,5 +1,7 @@
 import { Configuration, OpenAIApi, ChatCompletionRequestMessage } from 'openai';
 import * as dotenv from 'dotenv';
+import * as fs from 'fs';
+import {workspace, ExtensionContext} from 'vscode';
 //import chalk from 'chalk';
 
 dotenv.config();
@@ -8,9 +10,22 @@ const configuration = new Configuration({
 });
 const openai = new OpenAIApi(configuration);
 
-export async function getChatGPTResponse(prompt: string): Promise<string> {
-  const messages: ChatCompletionRequestMessage[] = [];
+interface ResponseCache {
+  [prompt: string]: string;
+}
+
+const cacheFilePath = 'responseCache.json';
+
+export async function getChatGPTResponse(prompt: string, context: ExtensionContext): Promise<string> {
+  const cacheKey = `responseCache.${prompt}`;
+  const cachedResponse = context.globalState.get<string>(cacheKey);
+
+  if (cachedResponse) {
+    return cachedResponse;
+  }
+
   let response = '';
+  const messages: ChatCompletionRequestMessage[] = [];
 
   const sendUserMessage = async (input: string) => {
     const requestMessage: ChatCompletionRequestMessage = {
@@ -19,22 +34,29 @@ export async function getChatGPTResponse(prompt: string): Promise<string> {
     };
     messages.push(requestMessage);
 
-    const completion = await openai.createChatCompletion({
-      model: 'gpt-3.5-turbo',
-      messages: messages,
-    });
-
-    const responseMessage = completion.data.choices[0].message;
-    if (responseMessage) {
-      response += responseMessage.content;
-      messages.push({
-        role: responseMessage.role,
-        content: responseMessage.content,
+    try {
+      const completion = await openai.createChatCompletion({
+        model: 'gpt-4',
+        messages: messages,
       });
+
+      const responseMessage = completion.data.choices[0].message;
+      if (responseMessage) {
+        response += responseMessage.content;
+        messages.push({
+          role: responseMessage.role,
+          content: responseMessage.content,
+        });
+      }
+    } catch (error) {
+      throw error;
     }
   };
 
   await sendUserMessage(prompt);
+
+  // Cache the response
+  await context.globalState.update(cacheKey, response);
 
   return response;
 }
