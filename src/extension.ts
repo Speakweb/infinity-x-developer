@@ -5,6 +5,7 @@ import { extensions } from 'vscode';
 import { workspace, commands } from 'vscode';
 import * as fs from 'fs';
 import * as DiffMatchPatch from 'diff-match-patch';
+import { error } from 'console';
 
 
 function replacePatchLineRange(startLine: number, endLine: number, patch: string): string {
@@ -42,11 +43,13 @@ function applyGitDiffToActiveEditor(gitDiff: string, editor: vscode.TextEditor) 
     const dmp = new DiffMatchPatch.diff_match_patch();
     const patches = dmp.patch_fromText(getSubstringAtAtSign(gitDiff));
     const [newContent, _] = dmp.patch_apply(patches, content);
-    if (_.find(v => !v)) {
+    vscode.window.showInformationMessage(process.cwd());
+    if (_.find(v => !v)) { // "!" removed from second v
+      fs.writeFileSync("DMPDebug/DMPPatch.txt", "Git Diff -\n"+ gitDiff)
+      fs.writeFileSync("DMPDebug/NewContent.txt", "New Contant -\n" + newContent)
+      fs.writeFileSync("DMPDebug/OldContent.txt", "Old Content -\n"+content,)
       throw new Error(`Could not apply patch ${gitDiff}`);
     }
-    // How do I switch to this editor?
-    
   
     const thenable = editor.edit((editBuilder) => {
       const range = new vscode.Range(
