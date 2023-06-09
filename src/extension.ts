@@ -42,11 +42,16 @@ function applyGitDiffToActiveEditor(gitDiff: string, editor: vscode.TextEditor) 
     const dmp = new DiffMatchPatch.diff_match_patch();
     const patches = dmp.patch_fromText(getSubstringAtAtSign(gitDiff));
     const [newContent, _] = dmp.patch_apply(patches, content);
+    if (_.find(v => !v)) {
+      throw new Error(`Could not apply patch ${gitDiff}`);
+    }
+    // How do I switch to this editor?
+    
   
-    editor.edit((editBuilder) => {
+    const thenable = editor.edit((editBuilder) => {
       const range = new vscode.Range(
         document.positionAt(0),
-        document.positionAt(content.length) 
+        document.positionAt(content.length)
       );
       editBuilder.replace(range, newContent);
     }).then((success) => {
@@ -55,9 +60,11 @@ function applyGitDiffToActiveEditor(gitDiff: string, editor: vscode.TextEditor) 
       } else {
         vscode.window.showErrorMessage('Failed to apply git diff');
       }
-    });
-  }catch(e) {
+    })
+    console.log(thenable);
+  } catch(e) {
     console.error(e);
+  
   }
 }
 
@@ -172,13 +179,18 @@ function openPopupTextWindow(
     </html>
   `;
 
-  panel.webview.onDidReceiveMessage(message => {
+  panel.webview.onDidReceiveMessage(async message => {
+    
     let command = message.command;
     if (command === 'applyChanges') {
-      applyGitDiffToActiveEditor(replacePatchLineRange(selectedTextLines[0], selectedTextLines[1], gptReplyPatch), editor);
+      // We have to dispoase so that the previous window opens, I think
+      // What happens if there are multiple windows open?
+      panel.dispose();
+      await new Promise(resolve => setTimeout(resolve, 100));
+      applyGitDiffToActiveEditor(replacePatchLineRange(selectedTextLines[0], selectedTextLines[1], gptReplyPatch), vscode.window.activeTextEditor as vscode.TextEditor);
     }
     else if (command === 'tryAgain') {
-      // call the show input box function again
+      // call the show input box function agai5n
     }
     else if (command === 'closePanel') {
       panel.dispose();
