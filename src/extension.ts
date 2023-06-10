@@ -6,6 +6,9 @@ import { workspace, commands } from 'vscode';
 import * as fs from 'fs';
 import * as DiffMatchPatch from 'diff-match-patch';
 import { error } from 'console';
+import { getVSCodeDownloadUrl } from '@vscode/test-electron/out/util';
+import {join, resolve} from 'path'
+
 
 import AnsiToHtml from 'ansi-to-html';
 
@@ -46,6 +49,18 @@ function applyGitDiffToActiveEditor(gitDiff: string, editor: vscode.TextEditor) 
     const convertedPatch = newLocal.replace(/\r\n|\r|\n/g, '\n');
     const patches = dmp.patch_fromText(convertedPatch);
     const [newContent, _] = dmp.patch_apply(patches, content);
+
+    const folderPath = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath as string;
+    //vscode.window.showInformationMessage("Current Working DIR: " + process.cwd());
+    //vscode.window.showInformationMessage("Current folder path: " + folderPath!);
+    if (_.find(v => !v)) {
+      if (!fs.existsSync(join(folderPath, "DMPDebug")){
+        fs.mkdirSync(resolve(join(folderPath, "DMPDebug")))
+      }
+      fs.writeFileSync(resolve(join(folderPath, "DMPDebug", "DMPPatch.txt")), join("Git Diff -\n", gitDiff))
+      fs.writeFileSync(resolve(join(folderPath, "DMPDebug", "NewContent.txt")), join("New Contant -\n", newContent))
+      fs.writeFileSync(resolve(join(folderPath, "DMPDebug", "OldContent.txt")), join("Old Content -\n", content))
+
     vscode.window.showInformationMessage(process.cwd());
     if (_.find((v) => !v)) {
       fs.writeFileSync("DMPPatch.txt", "Git Diff -\n" + gitDiff);
