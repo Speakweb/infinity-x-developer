@@ -10,6 +10,7 @@ import { getVSCodeDownloadUrl } from '@vscode/test-electron/out/util';
 import {join, resolve} from 'path'
 
 
+import AnsiToHtml from 'ansi-to-html';
 
 function replacePatchLineRange(startLine: number, endLine: number, patch: string): string {
   const lines = patch.split('\n');
@@ -47,8 +48,11 @@ function applyGitDiffToActiveEditor(gitDiff: string, editor: vscode.TextEditor) 
   try {
     const { document } = editor;
     const content = document.getText();
+
     const dmp = new DiffMatchPatch.diff_match_patch();
-    const patches = dmp.patch_fromText(getSubstringAtAtSign(gitDiff));
+    const newLocal = getSubstringAtAtSign(gitDiff);
+    const convertedPatch = newLocal.replace(/\r\n|\r|\n/g, '\n');
+    const patches = dmp.patch_fromText(convertedPatch);
     const [newContent, _] = dmp.patch_apply(patches, content);
 
     const folderPath = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath as string;
@@ -61,26 +65,27 @@ function applyGitDiffToActiveEditor(gitDiff: string, editor: vscode.TextEditor) 
       fs.writeFileSync(resolve(join(folderPath, "DMPDebug", "DMPPatch.txt")), join("Git Diff -\n", gitDiff))
       fs.writeFileSync(resolve(join(folderPath, "DMPDebug", "NewContent.txt")), join("New Contant -\n", newContent))
       fs.writeFileSync(resolve(join(folderPath, "DMPDebug", "OldContent.txt")), join("Old Content -\n", content))
+      
       throw new Error(`Could not apply patch ${gitDiff}`);
     }
-  
+
     const thenable = editor.edit((editBuilder) => {
       const range = new vscode.Range(
         document.positionAt(0),
         document.positionAt(content.length)
       );
       editBuilder.replace(range, newContent);
+      console.log(convertedPatch);
     }).then((success) => {
       if (success) {
         vscode.window.showInformationMessage('Git diff applied successfully');
       } else {
         vscode.window.showErrorMessage('Failed to apply git diff');
       }
-    })
+    });
     console.log(thenable);
-  } catch(e) {
+  } catch (e) {
     console.error(e);
-  
   }
 }
 
@@ -105,19 +110,16 @@ export function activate(context: vscode.ExtensionContext) {
     const editor = vscode.window.activeTextEditor;
     if (editor) {
       const selectedText = editor.document.getText(editor.selection);
-      const selectedTextLines = [
-        editor.selection.start.line, 
-        editor.selection.end.line
-      ];
+      const selectedTextLines = [editor.selection.start.line, editor.selection.end.line];
       const inputBoxOptions: vscode.InputBoxOptions = {
         prompt: 'What would you like to change about the following code?'
       };
 
       vscode.window.showInputBox(inputBoxOptions).then(async (userInput) => {
         if (userInput) {
-          const prompt =  `
+          const prompt = `
           You are a developer who will be provided with a snippet of code in a file, and a description of what the code should do.  Return a unified diff format patch that modifies the code to do what the description says.  
-          Assume the code snippet starts at the first line, and dont worry about the rest of the file.
+          Assume the code snippet starts at the first line, and don't worry about the rest of the file.
           Return only a valid and parsable unified diff format patch with no extra text.
 
           Description of changes: "${userInput}"
@@ -136,7 +138,7 @@ export function activate(context: vscode.ExtensionContext) {
             editor
           );
         }
-        //todo turn into function thenc all from botton
+        //todo turn into function thenc all from button
       });
     }
   });
@@ -148,45 +150,78 @@ function fetchGitPatch(selectedText: string) {
 }
 
 function openPopupTextWindow(
-  gptReplyPatch: string, 
-  selectedText: string, 
-  selectedTextLines: number[], 
+  gptReplyPatch: string,
+  selectedText: string,
+  selectedTextLines: number[],
   editor: vscode.TextEditor
-  ) {
+) {
   const panel = vscode.window.createWebviewPanel(
-      'popupTextWindow',
-      'GPT Response',
-      vscode.ViewColumn.One,
-      {
-        enableScripts: true,
-        retainContextWhenHidden: true
-      }
+    'popupTextWindow',
+    'GPT Response',
+    vscode.ViewColumn.One,
+    {
+      enableScripts: true,
+      retainContextWhenHidden: true
+    }
   );
+
+  const css = `
+    <style>
+      body {
+        background-color: black;
+        color: white;
+      }
+      
+      .diff-container {
+        font-family: monospace;
+        white-space: pre-wrap;
+        padding: 10px;
+        background-color: #000000;
+        color: #ffffff;
+      }
+      
+      .added {
+        background-color: #007f00;
+        color: #ffffff;
+      }
+      
+      .removed {
+        background-color: #7f0000;
+        color: #ffffff;
+      }
+    </style>
+  `;
+
+  const diffHtml = formatDiffText(gptReplyPatch);
 
   panel.webview.html = `
     <html>
+    <head>
+      ${css}
+    </head>
     <body>
-      <div>
-        <p>${gptReplyPatch}</p>
-        <div class="btn-group">
-          <br>
-          <button onclick="applyChanges()">Apply Changes</button>
-          <button onclick="tryAgain()">Try Again With a Different Prompt</button>
-          <button onclick="closePanel()">Close</button>
-        </div>
+      <div class="diff-container">
+        <pre>${diffHtml}</pre>
       </div>
-      
+      <h3>Selected Code:</h3>
+      <pre>${selectedText}</pre>
+      <div class="btn-group">
+        <br>
+        <button onclick="applyChanges()">Apply Changes</button>
+        <button onclick="tryAgain()">Try Again With a Different Prompt</button>
+        <button onclick="closePanel()">Close</button>
+      </div>
       <script>
         const vscode = acquireVsCodeApi();
-        
+
         function applyChanges() {
           vscode.postMessage({ command: 'applyChanges' });
         }
-        
+
         function tryAgain() {
           vscode.postMessage({ command: 'tryAgain' });
         }
-        
+
         function closePanel() {
           vscode.postMessage({ command: 'closePanel' });
         }
@@ -195,23 +230,43 @@ function openPopupTextWindow(
     </html>
   `;
 
-  panel.webview.onDidReceiveMessage(async message => {
-    
+  panel.webview.onDidReceiveMessage(async (message) => {
     let command = message.command;
     if (command === 'applyChanges') {
-      // We have to dispoase so that the previous window opens, I think
+      // We have to dispose so that the previous window opens, I think
       // What happens if there are multiple windows open?
       panel.dispose();
-      await new Promise(resolve => setTimeout(resolve, 100));
-      applyGitDiffToActiveEditor(replacePatchLineRange(selectedTextLines[0], selectedTextLines[1], gptReplyPatch), vscode.window.activeTextEditor as vscode.TextEditor);
-    }
-    else if (command === 'tryAgain') {
-      // call the show input box function agai5n
-    }
-    else if (command === 'closePanel') {
+      await new Promise((resolve) => setTimeout(resolve, 100));
+      applyGitDiffToActiveEditor(
+        replacePatchLineRange(selectedTextLines[0], selectedTextLines[1], gptReplyPatch),
+        vscode.window.activeTextEditor as vscode.TextEditor
+      );
+    } else if (command === 'tryAgain') {
+      // call the show input box function again
+    } else if (command === 'closePanel') {
       panel.dispose();
     }
   });
+}
+
+
+function formatDiffText(diffText: string): string {
+  const ansiToHtml = new AnsiToHtml();
+  const lines = diffText.split('\n');
+  let formattedDiff = '';
+
+  for (let line of lines) {
+    line = line.trim();
+    if (line.startsWith('+')) {
+      formattedDiff += `<span class="added">${ansiToHtml.toHtml(line)}</span>\n`;
+    } else if (line.startsWith('-')) {
+      formattedDiff += `<span class="removed">${ansiToHtml.toHtml(line)}</span>\n`;
+    } else {
+      formattedDiff += `${ansiToHtml.toHtml(line)}\n`;
+    }
+  }
+
+  return formattedDiff;
 }
 
 export function deactivate() {}
