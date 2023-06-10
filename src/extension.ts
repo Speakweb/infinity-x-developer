@@ -28,6 +28,11 @@ function replacePatchLineRange(startLine: number, endLine: number, patch: string
   return modifiedPatch;
 }
 
+function writeToGConsole(outputString: string, consoleName: string = "Console Output"){
+  let console = vscode.window.createOutputChannel(consoleName);
+  console.appendLine(outputString);
+}
+
 function getSubstringAtAtSign(input: string): string {
   const atSignIndex = input.indexOf("@");
 
@@ -49,14 +54,13 @@ function applyGitDiffToActiveEditor(gitDiff: string, editor: vscode.TextEditor) 
     const folderPath = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath as string;
     //vscode.window.showInformationMessage("Current Working DIR: " + process.cwd());
     //vscode.window.showInformationMessage("Current folder path: " + folderPath!);
-    if (_.find(v => !v)) { 
-      if (!fs.existsSync(join(folderPath, "DMPDebug")){
+    if (_.find(v => v)) { 
+      if (!fs.existsSync(join(folderPath, "DMPDebug"))){
         fs.mkdirSync(resolve(join(folderPath, "DMPDebug")))
       }
       fs.writeFileSync(resolve(join(folderPath, "DMPDebug", "DMPPatch.txt")), join("Git Diff -\n", gitDiff))
       fs.writeFileSync(resolve(join(folderPath, "DMPDebug", "NewContent.txt")), join("New Contant -\n", newContent))
       fs.writeFileSync(resolve(join(folderPath, "DMPDebug", "OldContent.txt")), join("Old Content -\n", content))
-      
       throw new Error(`Could not apply patch ${gitDiff}`);
     }
   
