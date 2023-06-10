@@ -49,7 +49,7 @@ function applyGitDiffToActiveEditor(gitDiff: string, editor: vscode.TextEditor) 
     const folderPath = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath as string;
     vscode.window.showInformationMessage(process.cwd());
     vscode.window.showInformationMessage(folderPath!);
-    if (_.find(v => v)) { // "!" removed from second v
+    if (_.find(v => !v)) { // "!" removed from second v
       fs.mkdirSync(resolve(join(folderPath, "DMPDebug")))
       fs.writeFileSync(resolve(join(folderPath, "DMPDebug", "DMPPatch.txt")), "Git Diff -\n"+ gitDiff)
       fs.writeFileSync(resolve(join(folderPath, "DMPDebug,","NewContent.txt")), "New Contant -\n" + newContent)
