@@ -6,6 +6,9 @@ import { workspace, commands } from 'vscode';
 import * as fs from 'fs';
 import * as DiffMatchPatch from 'diff-match-patch';
 import { error } from 'console';
+import { getVSCodeDownloadUrl } from '@vscode/test-electron/out/util';
+import {join, resolve} from 'path'
+
 
 
 function replacePatchLineRange(startLine: number, endLine: number, patch: string): string {
@@ -39,15 +42,18 @@ function applyGitDiffToActiveEditor(gitDiff: string, editor: vscode.TextEditor) 
   try {
     const { document } = editor;
     const content = document.getText();
-  
     const dmp = new DiffMatchPatch.diff_match_patch();
     const patches = dmp.patch_fromText(getSubstringAtAtSign(gitDiff));
     const [newContent, _] = dmp.patch_apply(patches, content);
+
+    const folderPath = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath as string;
     vscode.window.showInformationMessage(process.cwd());
-    if (_.find(v => !v)) { // "!" removed from second v
-      fs.writeFileSync("DMPDebug/DMPPatch.txt", "Git Diff -\n"+ gitDiff)
-      fs.writeFileSync("DMPDebug/NewContent.txt", "New Contant -\n" + newContent)
-      fs.writeFileSync("DMPDebug/OldContent.txt", "Old Content -\n"+content,)
+    vscode.window.showInformationMessage(folderPath!);
+    if (_.find(v => v)) { // "!" removed from second v
+      fs.mkdirSync(resolve(join(folderPath, "DMPDebug")))
+      fs.writeFileSync(resolve(join(folderPath, "DMPDebug", "DMPPatch.txt")), "Git Diff -\n"+ gitDiff)
+      fs.writeFileSync(resolve(join(folderPath, "DMPDebug,","NewContent.txt")), "New Contant -\n" + newContent)
+      fs.writeFileSync(resolve(join(folderPath, "DMPDebug,","OldContent.txt")), "Old Content -\n"+content,)
       throw new Error(`Could not apply patch ${gitDiff}`);
     }
   
