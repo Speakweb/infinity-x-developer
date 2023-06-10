@@ -49,7 +49,7 @@ function applyGitDiffToActiveEditor(gitDiff: string, editor: vscode.TextEditor) 
     const folderPath = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath as string;
     //vscode.window.showInformationMessage("Current Working DIR: " + process.cwd());
     //vscode.window.showInformationMessage("Current folder path: " + folderPath!);
-    if (_.find(v => v)) { 
+    if (_.find(v => !v)) { 
       if (!fs.existsSync(join(folderPath, "DMPDebug")){
         fs.mkdirSync(resolve(join(folderPath, "DMPDebug")))
       }
