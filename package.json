@@ -48,7 +48,7 @@
     "diff-match-patch": "^1.0.5",
     "dotenv-safe": "^8.2.0",
     "execa": "^7.1.1",
-    "openai": "^3.2.1",
+    "openai": "^3.3.0",
     "ora": "^6.3.1"
   }
 }

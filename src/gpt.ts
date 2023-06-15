@@ -1,4 +1,4 @@
-import { Configuration, OpenAIApi, ChatCompletionRequestMessage } from 'openai';
+import { Configuration, OpenAIApi, ChatCompletionRequestMessage, ChatCompletionFunctions } from 'openai';
 import * as dotenv from 'dotenv';
 import * as fs from 'fs';
 import {workspace, ExtensionContext} from 'vscode';
@@ -16,36 +16,57 @@ interface ResponseCache {
 
 const cacheFilePath = 'responseCache.json';
 
-export async function getChatGPTResponse(prompt: string, context: ExtensionContext): Promise<string> {
-  const cacheKey = `responseCache.${prompt}`;
-  const cachedResponse = context.globalState.get<string>(cacheKey);
+export async function getChatGPTResponse<T>(
+  prompt: string, 
+  context: ExtensionContext, 
+  messages: ChatCompletionRequestMessage[],
+  functions: ChatCompletionFunctions[],
+  callbacks: ((params: any) => any)[]): Promise<T> {
+  const cacheKey = `responseCache.${prompt + JSON.stringify(functions) + JSON.stringify(messages)}`;
+  const cachedResponse = context.globalState.get<T>(cacheKey);
 
   if (cachedResponse) {
     return cachedResponse;
   }
 
   let response = '';
-  const messages: ChatCompletionRequestMessage[] = [];
+  
 
   const sendUserMessage = async (input: string) => {
     const requestMessage: ChatCompletionRequestMessage = {
       role: 'user',
       content: input,
     };
-    messages.push(requestMessage);
 
     try {
       const completion = await openai.createChatCompletion({
-        model: 'gpt-4',
-        messages: messages,
+        model: 'gpt-4-0613',
+        messages: messages.concat(requestMessage),
+        functions: functions.length ? functions : undefined,
+        function_call: functions.length ? 'auto' : undefined
       });
 
       const responseMessage = completion.data.choices[0].message;
-      if (responseMessage) {
-        response += responseMessage.content;
+      let responseContent = responseMessage?.content;
+      if (responseMessage?.function_call) { 
+        const function_name = responseMessage?.function_call?.name;
+        const foundFunction = callbacks.find(callback => callback.name === function_name);
+        if (!foundFunction) {
+          throw new Error(`ChatGPT function ${function_name} not found`);
+        }
+        responseContent = foundFunction(
+            JSON.parse(responseMessage?.function_call?.arguments || "{}")
+        );
+      }
+  
+      
+      if (responseMessage && responseContent) {
+        response += responseContent,
         messages.push({
           role: responseMessage.role,
-          content: responseMessage.content,
+          function_call: responseMessage.function_call,
+          content: responseMessage.content
+          // What is the content in the case of a function call?
         });
       }
     } catch (error) {
@@ -58,5 +79,5 @@ export async function getChatGPTResponse(prompt: string, context: ExtensionConte
   // Cache the response
   await context.globalState.update(cacheKey, response);
 
-  return response;
+  return response as unknown as T;
 }

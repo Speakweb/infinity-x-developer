@@ -7,7 +7,7 @@ import * as fs from 'fs';
 import * as DiffMatchPatch from 'diff-match-patch';
 import { error } from 'console';
 import { getVSCodeDownloadUrl } from '@vscode/test-electron/out/util';
-import {join, resolve} from 'path'
+import { join, resolve } from 'path'
 
 
 import AnsiToHtml from 'ansi-to-html';
@@ -16,25 +16,32 @@ function replacePatchLineRange(startLine: number, endLine: number, patch: string
   const lines = patch.split('\n');
   const headerRegex = /^@@ -(\d+),(\d+) \+(\d+),(\d+) @@/;
 
+  let originalLength = 0;
+  let newLength = 0;
   let modifiedPatch = '';
   let foundHeader = false;
 
   for (let line of lines) {
     if (headerRegex.test(line) && !foundHeader) {
-      line = line.replace(headerRegex, `@@ -${startLine},${endLine - startLine + 1} +${startLine},${endLine - startLine + 1} @@`);
+      let match = line.match(headerRegex);
+      originalLength = match ? parseInt(match[2]) : 0;
+      newLength = match ? parseInt(match[4]) : 0;
+
+      line = line.replace(headerRegex, `@@ -${startLine},${originalLength} +${startLine},${newLength} @@`);
       foundHeader = true;
     }
     modifiedPatch += line + '\n';
   }
+
   return modifiedPatch;
 }
 
-function writeToGConsole(outputString: string, consoleName: string = "Console Output"){
+function writeToGConsole(outputString: string, consoleName: string = "Console Output") {
   let console = vscode.window.createOutputChannel(consoleName);
   console.appendLine(outputString);
 }
 
-function getSubstringAtAtSign(input: string): string {
+function TrimBeforeAtSign(input: string): string {
   const atSignIndex = input.indexOf("@");
 
   if (atSignIndex !== -1) {
@@ -50,23 +57,25 @@ function applyGitDiffToActiveEditor(gitDiff: string, editor: vscode.TextEditor) 
     const content = document.getText();
 
     const dmp = new DiffMatchPatch.diff_match_patch();
-    const newLocal = getSubstringAtAtSign(gitDiff);
-    const convertedPatch = newLocal.replace(/\r\n|\r|\n/g, '\n');
-    const patches = dmp.patch_fromText(convertedPatch);
+    const extractedUDFFromGitDiff = TrimBeforeAtSign(gitDiff);
+    const fixLineEndings = extractedUDFFromGitDiff//.replace(/\r\n|\r|\n/g, '\n');
+    const patches = dmp.patch_fromText(fixLineEndings);
     const [newContent, _] = dmp.patch_apply(patches, content);
 
     const folderPath = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath as string;
     //vscode.window.showInformationMessage("Current Working DIR: " + process.cwd());
     //vscode.window.showInformationMessage("Current folder path: " + folderPath!);
-    if (_.find(v => !v)) { 
-      if (!fs.existsSync(join(folderPath, "DMPDebug"))){
-        fs.mkdirSync(resolve(join(folderPath, "DMPDebug")))
-      }
-      fs.writeFileSync(resolve(join(folderPath, "DMPDebug", "DMPPatch.txt")), join("Git Diff -\n", gitDiff))
-      fs.writeFileSync(resolve(join(folderPath, "DMPDebug", "NewContent.txt")), join("New Contant -\n", newContent))
-      fs.writeFileSync(resolve(join(folderPath, "DMPDebug", "OldContent.txt")), join("Old Content -\n", content))
-      
-      throw new Error(`Could not apply patch ${gitDiff}`);
+
+    if (!fs.existsSync(join(folderPath, "DMPDebug"))) {
+      fs.mkdirSync(resolve(join(folderPath, "DMPDebug")))
+    }
+    fs.writeFileSync(resolve(join(folderPath, "DMPDebug", "DMPPatch.txt")), join("Patch -\n", fixLineEndings))
+    fs.writeFileSync(resolve(join(folderPath, "DMPDebug", "NewContent.txt")), join("New Contant -\n", newContent))
+    fs.writeFileSync(resolve(join(folderPath, "DMPDebug", "OldContent.txt")), join("Old Content -\n", content))
+
+    const couldNotApplyPatch = _.some(v => !v);
+    if (couldNotApplyPatch) {
+      throw new Error(`Could not apply patch ${fixLineEndings}`);
     }
 
     const thenable = editor.edit((editBuilder) => {
@@ -75,7 +84,7 @@ function applyGitDiffToActiveEditor(gitDiff: string, editor: vscode.TextEditor) 
         document.positionAt(content.length)
       );
       editBuilder.replace(range, newContent);
-      console.log(convertedPatch);
+      console.log(fixLineEndings);
     }).then((success) => {
       if (success) {
         vscode.window.showInformationMessage('Git diff applied successfully');
@@ -106,11 +115,27 @@ function trimGraves(input: string): string {
 }
 
 export function activate(context: vscode.ExtensionContext) {
-  let disposable = vscode.commands.registerCommand('extension.modifySelectedText', () => {
+  let disposable = vscode.commands.registerCommand('extension.modifySelectedText', async () => {
     const editor = vscode.window.activeTextEditor;
+    
     if (editor) {
+      let newSelections = [];
+      for (let selection of editor.selections) {
+          let startLine = selection.start.line;
+          let endLine = selection.end.line;
+
+          let newStart = new vscode.Position(startLine, 0);
+          let newEnd = new vscode.Position(endLine, editor.document.lineAt(endLine).text.length);
+          newSelections.push(new vscode.Selection(newStart, newEnd));
+      }
+
+      editor.selections = newSelections;
+      // Show the user what exactly will be sent to the language model, or maybe I shouldn't.  It's not relevant ot them
+      await new Promise(resolve => setTimeout(resolve, 100));
       const selectedText = editor.document.getText(editor.selection);
-      const selectedTextLines = [editor.selection.start.line, editor.selection.end.line];
+      // Bruh, zero based indexing in the api, but 1 based in the editor
+      // Wait, are the line selections in the unified diff format 1 based or 0 based?
+      const selectedTextLines = [editor.selection.start.line + 1, editor.selection.end.line + 1];
       const inputBoxOptions: vscode.InputBoxOptions = {
         prompt: 'What would you like to change about the following code?'
       };
@@ -118,21 +143,91 @@ export function activate(context: vscode.ExtensionContext) {
       vscode.window.showInputBox(inputBoxOptions).then(async (userInput) => {
         if (userInput) {
           const prompt = `
-          You are a developer who will be provided with a snippet of code in a file, and a description of what the code should do.  Return a unified diff format patch that modifies the code to do what the description says.  
-          Assume the code snippet starts at the first line, and don't worry about the rest of the file.
-          Return only a valid and parsable unified diff format patch with no extra text.
+You are a developer who will be provided with a snippet of code in a file, and a description of what the code should do. 
+Apply a unified diff format patch that modifies the code to do what the description says. 
+Assume the code snippet starts at the first line of the file, and that the last line in the snippet is the last line in the file.
+Make sure the "from" hunk line ranges accurately reflect the input code, and the "to" hunk line ranges accurately reflect the output code.  
+Also you keep forgetting the whitespace I gave you in the original code, and the the resulting "from" section of the hunk can't be applied.  Stop fucking doing that as well.
+Finally, so some fucking reason the patches you generate don't have the whitespace intendation of the original code, so I can't apply them.  Stop fucking doing that.
+You keep replacing an empty line with code, and the not writing that you deleted the empty line.  Stop fucking doing that. 
+If you replace an empty line with a non-empty line, that counts as a deleted and then inserted line.
+If you REPLACE a line, then the "to" hunk does NOT get bigger, it has the same amount of lines.  Make sure the count in the "to" hunk actually reflects the amount of fucking lines in the patch.
+Please, I'm begging you.  Before you give me this patch, make sure that the "from" hunk is present in the input code, has the correct indendation, has the correct count.
+Then make sure the "to" hunk has the correct amount of fucking lines that will be present once the modifications apply.  CHECK THE LINE COUNTS OF THE PATCH BEFORE YOU GIVE THEM TO ME.  EMPTY LINES ARE LINES WHICH MUST BE ADDED AND REMOVED, NOT SIMPLY REPLACED.
+The indentatino of the "from" hunk better fucking match the indentation of the original code, retard
 
-          Description of changes: "${userInput}"
+When you call applyPatch, make sure the patch paramter is a fully valid, parsable unified diff format patch.
 
-          Code:
+Description of changes: "${userInput}"
 
-          ${selectedText}`;
-          fetchGitPatch(prompt);
-          let response = await getChatGPTResponse(prompt, context);
-          response = trimGraves(response);
-          response = getSubstringAtAtSign(response);
+The code is the last part of this prompt and starts on the next line.  All whitespace in all text below this is literal code and must be kept for the patch you generate to be applied.
+${selectedText}`;
+          
+          showFetchingNotification(prompt);
+          function applyPatch({patch, inputText, outputText, originalCodeIndent}: {patch: string, inputText: string, outputText: string, originalCodeIndent: string}) {
+            console.log(inputText)
+            console.log(outputText)
+            console.log(originalCodeIndent)
+            return patch;
+          }
+          
+          let response = await getChatGPTResponse<string>(
+            prompt,
+            context,
+            [],
+            [
+              {
+                "name": "applyPatch",
+                "description": "Apply The Unified Diff Format Patch to the code",
+                "parameters": {
+                  "type": "object",
+                  "properties": {
+                    "patch": { 
+                      "type": "string", 
+                      "description": "The patch being applied" 
+                    },
+                    "inputText": {
+                      "type": "string",
+                      "description": "The exact code that the patch is being applied to"
+                    },
+                    "outputText": {
+                      "type": "string",
+                      "description": "The exact code that the patch should produce"
+                    },
+                    "originalCodeIndent": {
+                      "type": "string",
+                      "description": "The exact indentation of the original code"
+                    }
+                  },
+                  "required": ["patch"],
+                },
+              }
+            ],
+            [applyPatch]
+          );
+          let santizedResponse = trimGraves(response);
+          santizedResponse = TrimBeforeAtSign(santizedResponse);
+          // I'll assume it responded wrong
+          /*try {
+            const reply = await getChatGPTResponse(
+              `In the hunk you said it only says there are 2 lines, originally, but there are 3.  There is an empty line`, 
+              context, 
+              [
+                {
+                  content: santizedResponse, 
+                  role: 'assistant'
+                }
+              ],
+              [],
+              []
+            );
+            console.log(reply);
+          } catch(e) {
+            console.log(e);
+          }*/
+          
           openPopupTextWindow(
-            response,
+            santizedResponse,
             selectedText,
             selectedTextLines,
             editor
@@ -145,7 +240,7 @@ export function activate(context: vscode.ExtensionContext) {
   context.subscriptions.push(disposable);
 }
 
-function fetchGitPatch(selectedText: string) {
+function showFetchingNotification(selectedText: string) {
   vscode.window.showInformationMessage(selectedText);
 }
 
@@ -269,4 +364,4 @@ function formatDiffText(diffText: string): string {
   return formattedDiff;
 }
 
-export function deactivate() {}
+export function deactivate() { }
