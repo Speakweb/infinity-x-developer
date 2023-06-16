@@ -15,7 +15,7 @@ export interface RelevantFile {
 export type Input = RelevantFile[];
 export type Output = RelevantFile[];
 
-const getModificationsPrompt = ({files, request}: { files: RelevantFile[], request: string }) => `
+export const getModificationsPrompt = ({files, request}: { files: RelevantFile[], request: string }) => `
 You are an excellent developer who follows best coding practices.  You will receive input in the shapes described below and then will call the "modifyCode" function with your modifications.
 
 The end of this system message will contain typescript types named Input and Output. 
