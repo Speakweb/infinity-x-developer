@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import {getChatGPTResponse} from './gpt';
-import {getModificationsPrompt, Output} from "./getModifications";
+import {editFiles, getModificationsPrompt, Output} from "./getModifications";
 import {showFetchingNotification} from "./showFetchingNotification";
 
 export function activate(context: vscode.ExtensionContext) {
@@ -78,23 +78,29 @@ export function activate(context: vscode.ExtensionContext) {
                                                         type: 'string',
                                                         description: "the path of the file being modified"
                                                     },
-                                                    content: {
-                                                        type: "array",
+                                                    insertions: {
+                                                        type: 'array',
                                                         items: {
-                                                            type: "object",
+                                                            type: 'object',
                                                             properties: {
                                                                 startLine: {
                                                                     type: 'number',
                                                                     description: "the line number of the start of the range being modified"
                                                                 },
-                                                                contents: {
-                                                                    type: "array",
+                                                                content: {
+                                                                    type: 'array',
                                                                     items: {
-                                                                        type: "string",
+                                                                        type: 'string',
                                                                         description: "the contents of the line being modified"
                                                                     }
                                                                 }
                                                             }
+                                                        }
+                                                    },
+                                                    deletions: {
+                                                        type: 'array',
+                                                        items: {
+                                                            type: 'number'
                                                         }
                                                     }
                                                 }
@@ -102,12 +108,14 @@ export function activate(context: vscode.ExtensionContext) {
                                         }
                                     },
                                     required: ['output']
-                                },
+                                }
                             }
                         ],
                         [modifyCode]
                     );
-/*
+
+                    editFiles(response as unknown as Output);
+/*                  
                     let santizedResponse = trimGraves(response);
                     santizedResponse = TrimBeforeAtSign(santizedResponse);
 */

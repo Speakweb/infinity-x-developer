@@ -22,7 +22,7 @@ export async function getChatGPTResponse<T>(
   messages: ChatCompletionRequestMessage[],
   functions: ChatCompletionFunctions[],
   callbacks: ((params: any) => any)[]): Promise<T> {
-  const cacheKey = `responseCache.${prompt + JSON.stringify(functions) + JSON.stringify(messages)}`;
+  const cacheKey = `responseCache.${prompt + JSON.stringify(functions) + JSON.stringify(messages)}     `;
   const cachedResponse = context.globalState.get<T>(cacheKey);
 
   if (cachedResponse) {
@@ -30,7 +30,6 @@ export async function getChatGPTResponse<T>(
   }
 
   let response = '';
-  
 
   const sendUserMessage = async (input: string) => {
     const requestMessage: ChatCompletionRequestMessage = {
@@ -57,11 +56,12 @@ export async function getChatGPTResponse<T>(
         responseContent = foundFunction(
             JSON.parse(responseMessage?.function_call?.arguments || "{}")
         );
+        console.log(responseContent)
       }
   
       
       if (responseMessage && responseContent) {
-        response += responseContent,
+        response = responseContent,
         messages.push({
           role: responseMessage.role,
           function_call: responseMessage.function_call,
