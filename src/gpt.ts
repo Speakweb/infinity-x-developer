@@ -7,6 +7,7 @@ import {workspace, ExtensionContext} from 'vscode';
 dotenv.config();
 const configuration = new Configuration({
   apiKey: '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',
+  //apiKey: process.env.GPT_KEY,
 });
 const openai = new OpenAIApi(configuration);
 

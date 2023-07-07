@@ -75,38 +75,42 @@ const deleteLines = (edit: vscode.WorkspaceEdit, editor: { document: any; edit: 
   };
   
   export const editFiles = async (output: Output) => {
-    const textEditorMap = new Map();
+    try{const textEditorMap = new Map();
   
-    for (const file of output) {
-      if (!fs.existsSync(file.path)) {
-        throw new Error(`File not found: ${file.path}`);
-      }
-  
-      let editor = textEditorMap.get(file.path);
-  
-      if (!editor) {
-        const uri = vscode.Uri.file(file.path);
-        const document = await vscode.workspace.openTextDocument(uri);
-        editor = await vscode.window.showTextDocument(document);
-        textEditorMap.set(file.path, editor);
-      }
-  
-      const edit = new vscode.WorkspaceEdit();
-      
-      // Delete lines
-      file.deletions.forEach((line) => {
-        deleteLines(edit, editor, [line]);
-        writeToGConsole("Deleting line" + line)
-      });
-      // Insert lines
-      file.insertions.forEach((insertion) => {
-        insertLines(edit, editor, insertion.startLine, insertion.content, output);
-        writeToGConsole("Inserting " + insertion.content + " on line " + insertion.startLine)
-      });
-      
+      for (const file of output) {
+        if (!fs.existsSync(file.path)) {
+          throw new Error(`File not found: ${file.path}`);
+        }
     
-      await vscode.workspace.applyEdit(edit);
-    }
+        let editor = textEditorMap.get(file.path);
+    
+        if (!editor) {
+          const uri = vscode.Uri.file(file.path);
+          const document = await vscode.workspace.openTextDocument(uri);
+          editor = await vscode.window.showTextDocument(document);
+          textEditorMap.set(file.path, editor);
+        }
+    
+        const edit = new vscode.WorkspaceEdit();
+        
+        // Delete lines
+        file.deletions.forEach((line) => {
+          deleteLines(edit, editor, [line]);
+          writeToGConsole("Deleting line" + line)
+        });
+        // Insert lines
+        file.insertions.forEach((insertion) => {
+          insertLines(edit, editor, insertion.startLine, insertion.content, output);
+          writeToGConsole("Inserting " + insertion.content + " on line " + insertion.startLine)
+        });
+        
+      
+        await vscode.workspace.applyEdit(edit);
+        vscode.window.showInformationMessage("Changes applied!");
+      }}catch(error){
+        vscode.window.showInformationMessage("There was an error encountered: \n" + (error as any).message);
+      }
+    
   };
   
 
