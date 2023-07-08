@@ -2,11 +2,11 @@ import * as vscode from 'vscode';
 import {getChatGPTResponse} from './gpt';
 import {editFiles, getModificationsPrompt, Output} from "./getModifications";
 import {showFetchingNotification} from "./showFetchingNotification";
-
+import {VSCGlobalStateEditor} from './editVSCGlobalStateVariables';
 
 export function activate(context: vscode.ExtensionContext) {
     try{
-        let disposable = vscode.commands.registerCommand('extension.modifySelectedText', async () => {
+        let modifySelectedTextDisposable = vscode.commands.registerCommand('extension.modifySelectedText', async () => {
         try{
             const editor = vscode.window.activeTextEditor;
 
@@ -159,12 +159,17 @@ export function activate(context: vscode.ExtensionContext) {
             vscode.window.showInformationMessage((error as any).message);
         }
         });
+        let VSCGlobalStateEditorDisposable = vscode.commands.registerCommand('extension.VSCGlobalStateEditor', async () => {
+            VSCGlobalStateEditor(context);
+        });
+        context.subscriptions.push(modifySelectedTextDisposable);
+        context.subscriptions.push(VSCGlobalStateEditorDisposable);
 
-        context.subscriptions.push(disposable);
+
     }catch (error){
         vscode.window.showInformationMessage((error as any).message);
-    }
-}
+    }  
+} 
 
 
 export function deactivate() {

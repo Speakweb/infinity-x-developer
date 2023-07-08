@@ -46,7 +46,7 @@ export async function getChatGPTResponse<T>(
 
     try {
       const completion = await openai.createChatCompletion({
-        model: context.globalState.get('GPTModel') || "'gpt-4-0613'",
+        model: context.globalState.get('GPTModel') || "gpt-4-0613",
         messages: messages.concat(requestMessage),
         functions: functions.length ? functions : undefined,
         function_call: functions.length ? 'auto' : undefined

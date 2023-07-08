@@ -1,6 +1,9 @@
 import vscode from "vscode";
 
-function writeToGConsole(outputString: string, consoleName: string = "Console Output") {
+export function writeToConsole(outputString: any, consoleName: string = "Console Output") {
     let console = vscode.window.createOutputChannel(consoleName);
-    console.appendLine(outputString);
+    console.appendLine(outputString.toString());
+}
+module.exports = {
+    writeToConsole
 }

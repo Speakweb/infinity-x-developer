@@ -1,10 +1,10 @@
 import * as vscode from 'vscode';
 
-function openVariablesWindow(context: vscode.ExtensionContext) {
+export function VSCGlobalStateEditor(context: vscode.ExtensionContext) {
     // Create a new panel for the separate window
     const panel = vscode.window.createWebviewPanel(
-        'variables',
-        'Variables',
+        'vscglobalstateeditor',
+        'VSC Global State Editor',
         vscode.ViewColumn.One,
         {
             enableScripts: true
@@ -13,98 +13,91 @@ function openVariablesWindow(context: vscode.ExtensionContext) {
 
     // Read the values from extensionContext.globalState and populate the text boxes
     const globalState = context.globalState;
-    const variables = [
+    const keys = [
         "APIKey", 
         "GPTModel"
-    ]
+    ];
+
+    vscode.window.showInformationMessage(globalState.get(keys[0]) || "empty")
 
     // Load the HTML content into the panel
-    panel.webview.html = getVariablesPageContent(variables, globalState);
+    panel.webview.html = getVariablesPageContent(keys, context);
 
     // Handle messages from the webview
     panel.webview.onDidReceiveMessage(message => {
         const { command, key, value } = message;
+        vscode.window.showInformationMessage(JSON.stringify({ command, key, value }))
+
         switch (command) {
             case 'updateVariable':
                 // Update the variable in extensionContext.globalState
                 globalState.update(key, value);
                 break;
-            case 'resetVariable':
-                // Reset the text box value to the original value from globalState
-                const originalValue = globalState.get(key);
-                panel.webview.postMessage({ command: 'resetVariable', key, value: originalValue });
-                break;
         }
     });
 }
 
-function getVariablesPageContent(variables: Iterable<string>, globalState: vscode.Memento): string {
+function getVariablesPageContent(variables: Iterable<string>, context: vscode.ExtensionContext): string {
     // Generate the HTML content for the variables page with the given values
-    let htmlContent = `
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <meta charset="UTF-8">
-            <title>Variables</title>
-            <style>
-                /* CSS styles for the UI */
-            </style>
-            <script>
-                // JavaScript code for handling button clicks and updating variables
-                document.addEventListener('DOMContentLoaded', () => {
-    `;
+    return `
+    <!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Variables</title>
+    <style>
+        /* CSS styles for the UI */
+    </style>
+    <script>
+        // JavaScript code for handling button clicks and updating variables
+        document.addEventListener('DOMContentLoaded', () => {
+            const vscode = acquireVsCodeApi();
+            const variables = JSON.parse('${JSON.stringify(Array.from(variables))}');
+            // const debugDiv = document.getElementById('debug')
+            // debugDiv.innerHTML = "Loaded"
 
-    for (const variable of variables) {
-        const value = globalState.get(variable);
+            variables.forEach(variable => {
+                const variableInput = document.getElementById(variable);
+                const okButton = document.getElementById('ok' + variable);
+                let originalValue = variableInput.value; 
 
-        htmlContent += `
-            const ${variable}Input = document.getElementById('${variable}');
-            const ${variable}OkButton = document.getElementById('ok${variable}');
-            const ${variable}ResetButton = document.getElementById('reset${variable}');
-            let original${variable}Value = '${value}';
-
-            // Set the initial value of the text box
-            ${variable}Input.value = original${variable}Value;
-
-            // Handle OK button click
-            ${variable}OkButton.addEventListener('click', () => {
-                const value = ${variable}Input.value;
-                vscode.postMessage({
-                    command: 'updateVariable',
-                    key: '${variable}',
-                    value
+                // Handle OK button click
+                okButton.addEventListener('click', () => {
+                    // debugDiv.innerHTML = "started click handler"
+                    // try {
+                        const ret = vscode.postMessage({
+                            command: 'updateVariable',
+                            key: variable,
+                            value: variableInput.value,
+                        });
+                        // debugDiv.innerHTML = JSON.stringify(ret)
+                    // } catch(e) {
+                        // debugDiv.innerHTML = e.message;
+                    // }
                 });
             });
-
-            // Handle RESET button click
-            ${variable}ResetButton.addEventListener('click', () => {
-                ${variable}Input.value = original${variable}Value;
-            });
-        `;
-    }
-
-    htmlContent += `
-                });
-            </script>
-        </head>
-        <body>
-    `;
-
-    for (const variable of variables) {
-        htmlContent += `
+        });
+    </script>
+</head>
+<body>
+    ${Array.from(variables)
+        .map(variable => `
             <div>
                 <label for="${variable}">${variable}:</label>
-                <input type="text" id="${variable}" value="" />
+                <input type="text" id="${variable}" value="${context.globalState.get(variable) || variable}" />
                 <button id="ok${variable}">OK</button>
-                <button id="reset${variable}">RESET</button>
             </div>
-        `;
-    }
+        `)
+        .join('')}
+        <div id="debug"></div>
+</body>
+</html>
 
-    htmlContent += `
-        </body>
-        </html>
     `;
+}
 
-    return htmlContent;
+// Invoke the openVariablesWindow function where appropriate
+
+module.exports = {
+    VSCGlobalStateEditor,
 }

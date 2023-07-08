@@ -16,6 +16,10 @@
       {
         "command": "extension.modifySelectedText",
         "title": "Send Selected Text to ChatGPT"
+      },
+      {
+        "command": "extension.VSCGlobalStateEditor",
+        "title": "Edit Global State Variables"
       }
     ]
   },
