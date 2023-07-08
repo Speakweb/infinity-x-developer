@@ -1,17 +1,10 @@
 import { Configuration, OpenAIApi, ChatCompletionRequestMessage, ChatCompletionFunctions } from 'openai';
-import * as dotenv from 'dotenv';
-import * as fs from 'fs';
 import {workspace, ExtensionContext} from 'vscode';
-//import chalk from 'chalk';
+import * as vscode from 'vscode';
+import {VSCGlobalStateEditor} from './editVSCGlobalStateVariables';
+
 // let GPTModel = 'gpt-4-0613'
 // let openAIKey = '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';
-
-dotenv.config();
-const configuration = new Configuration({
-  apiKey: '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',
-  //apiKey: process.env.GPT_KEY,
-});
-const openai = new OpenAIApi(configuration);
 
 interface ResponseCache {
   [prompt: string]: string;
@@ -39,14 +32,21 @@ export async function getChatGPTResponse<T>(
       role: 'user',
       content: input,
     };
+    const GPTAPIValue = context.globalState.get('GPTAPIKey') as string || process.env.GPTAPIKey;
+    if (!GPTAPIValue){
+      vscode.window.showInformationMessage("'GPTAPIKey' not found within process.env or VSC's globalState.")
+      VSCGlobalStateEditor(context);
+      return;
+    }
     const configuration = new Configuration({
-      apiKey: context.globalState.get('APIKey') || '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',
+      apiKey: GPTAPIValue,
     });
     const openai = new OpenAIApi(configuration);
 
     try {
+      const GPTModelValue = context.globalState.get('GPTModel') as string || process.env.GOTModel || "gpt-4-0613";
       const completion = await openai.createChatCompletion({
-        model: context.globalState.get('GPTModel') || "gpt-4-0613",
+        model: GPTModelValue,
         messages: messages.concat(requestMessage),
         functions: functions.length ? functions : undefined,
         function_call: functions.length ? 'auto' : undefined

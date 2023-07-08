@@ -14,7 +14,7 @@ export function VSCGlobalStateEditor(context: vscode.ExtensionContext) {
     // Read the values from extensionContext.globalState and populate the text boxes
     const globalState = context.globalState;
     const keys = [
-        "APIKey", 
+        "GPTAPIKey", 
         "GPTModel"
     ];
 
