@@ -3,7 +3,7 @@ import {getChatGPTResponse} from './gpt';
 import {editFiles, getModificationsPrompt, Output} from "./getModifications";
 import {showFetchingNotification} from "./showFetchingNotification";
 import {VSCGlobalStateEditor} from './editVSCGlobalStateVariables';
-
+import {askChatGPTAQuestion } from './askGPTQuestion';
 export function activate(context: vscode.ExtensionContext) {
     try{
         let modifySelectedTextDisposable = vscode.commands.registerCommand('extension.modifySelectedText', async () => {
@@ -162,9 +162,13 @@ export function activate(context: vscode.ExtensionContext) {
         let VSCGlobalStateEditorDisposable = vscode.commands.registerCommand('extension.VSCGlobalStateEditor', async () => {
             VSCGlobalStateEditor(context);
         });
+        let askChatGPTAQuestionDisposable = vscode.commands.registerCommand("extension.askChatGPTAQuestion", async () => {
+            askChatGPTAQuestion(context);
+        });
+
         context.subscriptions.push(modifySelectedTextDisposable);
         context.subscriptions.push(VSCGlobalStateEditorDisposable);
-
+        context.subscriptions.push(askChatGPTAQuestionDisposable);
 
     }catch (error){
         vscode.window.showInformationMessage((error as any).message);

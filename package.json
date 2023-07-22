@@ -20,6 +20,10 @@
       {
         "command": "extension.VSCGlobalStateEditor",
         "title": "Edit Global State Variables"
+      },
+      {
+        "command": "extension.askChatGPTAQuestion",
+        "title": "Ask ChatGPT a question"
       }
     ]
   },
