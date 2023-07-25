@@ -1,6 +1,6 @@
 import vscode from "vscode";
 import * as DiffMatchPatch from "diff-match-patch";
-import {TrimBeforeAtSign} from "./trimBeforeAtSign";
+import {TrimBeforeAtSign} from "../textFormatting/trimBeforeAtSign";
 import fs from "fs";
 import {join, resolve} from "path";
 

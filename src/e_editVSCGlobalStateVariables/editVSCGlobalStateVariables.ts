@@ -96,8 +96,6 @@ function getVariablesPageContent(variables: Iterable<string>, context: vscode.Ex
     `;
 }
 
-// Invoke the openVariablesWindow function where appropriate
-
 module.exports = {
     VSCGlobalStateEditor,
 }

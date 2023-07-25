@@ -1,10 +1,7 @@
 import * as fs from "fs";
 import * as vscode from "vscode";
-let console = vscode.window.createOutputChannel("Console Output");
+import {writeToConsole} from "../textFormatting/writeToConsole";
 
-function writeToGConsole(outputString: string){
-    console.appendLine(outputString);
-}
 export interface Content {
     startLine: number;
     contents: string[];
@@ -96,12 +93,12 @@ const deleteLines = (edit: vscode.WorkspaceEdit, editor: { document: any; edit: 
         // Delete lines
         file.deletions.forEach((line) => {
           deleteLines(edit, editor, [line]);
-          writeToGConsole("Deleting line" + line)
+          writeToConsole("Deleting line" + line);
         });
         // Insert lines
         file.insertions.forEach((insertion) => {
           insertLines(edit, editor, insertion.startLine, insertion.content, output);
-          writeToGConsole("Inserting " + insertion.content + " on line " + insertion.startLine)
+          writeToConsole("Inserting " + insertion.content + " on line " + insertion.startLine);
         });
         
       

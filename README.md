@@ -1,6 +1,6 @@
 ### INFINITY X DEVELOPER README ###
 
-# Console Output Guide - 
+# Console Output Guide - #
 
     function writeToGConsole(outputString: string, consoleName: string = "Console Output"){
     let console = vscode.window.createOutputChannel(consoleName);

@@ -1,13 +1,12 @@
-import * as vscode from 'vscode';
-import {getChatGPTResponse} from './gpt';
-import {editFiles, getModificationsPrompt, Output} from "./getModifications";
-import {showFetchingNotification} from "./showFetchingNotification";
-import {VSCGlobalStateEditor} from './editVSCGlobalStateVariables';
-import {askChatGPTAQuestion } from './askGPTQuestion';
+import vscode from 'vscode';
+import {getChatGPTResponse} from './e_modifySelectedText/gpt';
+import {editFiles, getModificationsPrompt, Output} from "./e_modifySelectedText/getModifications";
+import {VSCGlobalStateEditor} from './e_editVSCGlobalStateVariables/editVSCGlobalStateVariables';
+import {askChatGPTAQuestion} from './e_askGPTQuestions/askGPTQuestion';
+
 export function activate(context: vscode.ExtensionContext) {
-    try{
+    try {
         let modifySelectedTextDisposable = vscode.commands.registerCommand('extension.modifySelectedText', async () => {
-        try{
             const editor = vscode.window.activeTextEditor;
 
             if (editor) {
@@ -22,13 +21,9 @@ export function activate(context: vscode.ExtensionContext) {
                 }
 
                 editor.selections = newSelections;
-                // Show the user what exactly will be sent to the language model, or maybe I shouldn't.  It's not relevant ot them
+                // Show the user what exactly will be sent to the language model, or maybe I shouldn't.  It's not relevant to them
                 await new Promise(resolve => setTimeout(resolve, 100));
                 const selectedText = editor.document.getText(editor.selection).split('\n');
-
-                // Bruh, zero based indexing in the api, but 1 based in the editor
-                // Wait, are the line selections in the unified diff format 1 based or 0 based?
-                const selectedTextLines = [editor.selection.start.line + 1, editor.selection.end.line + 1];
                 const inputBoxOptions: vscode.InputBoxOptions = {
                     prompt: 'What would you like to change about the following code?'
                 };
@@ -50,7 +45,7 @@ export function activate(context: vscode.ExtensionContext) {
                             request: userInput
                         });
 
-                        showFetchingNotification(prompt);
+                        vscode.window.showInformationMessage(prompt);
 
                         function modifyCode(
                             {
@@ -116,53 +111,16 @@ export function activate(context: vscode.ExtensionContext) {
                             ],
                             [modifyCode]
                         );
-                        editFiles(response as unknown as Output);
-    /*                  
-                        let santizedResponse = trimGraves(response);
-                        santizedResponse = TrimBeforeAtSign(santizedResponse);
-    */
-                        // I'll assume it responded wrong
-                        /*try {
-                        const reply = await getChatGPTResponse(
-                            `In the hunk you said it only says there are 2 lines, originally, but there are 3.  There is an empty line`,
-                            context,
-                            [
-                            {
-                                content: santizedResponse,
-                                role: 'assistant'
-                            }
-                            ],
-                            [],
-                            []
-                        );
-                        console.log(reply);
-                        } catch(e) {
-                        console.log(e);
-                        }*/
-
-                        /**
-                         * Let's just try straight modification
-                         */
-                        /*
-                                            openPopupTextWindow(
-                                                santizedResponse,
-                                                selectedText,
-                                                selectedTextLines,
-                                                editor
-                                            );
-                        */
+                        await editFiles(response as unknown as Output);
                     }
-                    //todo turn into function thenc all from button
                 });
             }
-        }catch(error){
-            vscode.window.showInformationMessage((error as any).message);
-        }
         });
         let VSCGlobalStateEditorDisposable = vscode.commands.registerCommand('extension.VSCGlobalStateEditor', async () => {
             VSCGlobalStateEditor(context);
         });
         let askChatGPTAQuestionDisposable = vscode.commands.registerCommand("extension.askChatGPTAQuestion", async () => {
+            //webstorm wants an await here, ignore it
             askChatGPTAQuestion(context);
         });
 
@@ -170,10 +128,10 @@ export function activate(context: vscode.ExtensionContext) {
         context.subscriptions.push(VSCGlobalStateEditorDisposable);
         context.subscriptions.push(askChatGPTAQuestionDisposable);
 
-    }catch (error){
+    } catch (error) {
         vscode.window.showInformationMessage((error as any).message);
-    }  
-} 
+    }
+}
 
 
 export function deactivate() {

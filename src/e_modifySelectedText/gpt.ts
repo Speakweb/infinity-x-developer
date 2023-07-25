@@ -1,7 +1,7 @@
 import { Configuration, OpenAIApi, ChatCompletionRequestMessage, ChatCompletionFunctions } from 'openai';
 import {workspace, ExtensionContext} from 'vscode';
 import * as vscode from 'vscode';
-import {VSCGlobalStateEditor} from './editVSCGlobalStateVariables';
+import {VSCGlobalStateEditor} from '../e_editVSCGlobalStateVariables/editVSCGlobalStateVariables';
 
 // let GPTModel = 'gpt-4-0613'
 // let openAIKey = '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';
@@ -18,7 +18,7 @@ export async function getChatGPTResponse<T>(
   messages: ChatCompletionRequestMessage[],
   functions: ChatCompletionFunctions[],
   callbacks: ((params: any) => any)[]): Promise<T> {
-  const cacheKey = `responseCache.${prompt + JSON.stringify(functions) + JSON.stringify(messages)}     `;
+  const cacheKey = `responseCache.${prompt + JSON.stringify(functions) + JSON.stringify(messages)}`;
   const cachedResponse = context.globalState.get<T>(cacheKey);
 
   if (cachedResponse) {

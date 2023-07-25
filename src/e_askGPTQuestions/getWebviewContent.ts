@@ -1,63 +1,5 @@
-// Import the necessary modules
 import * as vscode from 'vscode';
-import { getChatGPTResponse } from './gpt';
 
-async function showInputBox(): Promise<string | undefined> {
-    return await vscode.window.showInputBox({
-        prompt: "Ask ChatGPT a question",
-        placeHolder: 'Type your question here...',
-        value: '',
-    });
-}
-
-function addToGPTQuestionsAnswers(question: string, answer: string, context: vscode.ExtensionContext) {
-    const existingData = context.globalState.get("GPTQuestionsAnswers") || "{}";
-    const parsedData = JSON.parse(existingData as string);
-    if (!parsedData[question]){
-        parsedData[question] = answer;
-        const updatedData = JSON.stringify(parsedData);
-        context.globalState.update("GPTQuestionsAnswers", updatedData);
-    }
-    vscode.window.showInformationMessage(parsedData);
-}
-
-// Function to display all questions and answers in the WebView
-function displayAllQuestionsAnswers(context: vscode.ExtensionContext, panel: vscode.WebviewPanel) {
-    const existingData = context.globalState.get("GPTQuestionsAnswers") || "{}";
-    const qaPairs: { [question: string]: string } = JSON.parse(existingData as string);
-    const qaArray = Object.entries(qaPairs).map(([question, answer]) => ({ question, answer }));
-    panel.webview.html = getWebviewContent(qaArray);
-}
-
-export async function askChatGPTAQuestion(context: vscode.ExtensionContext){
-    const question = await showInputBox();
-    const answer = await getChatGPTResponse(question as string, context, [], [], []);
-    if (question != undefined){
-        addToGPTQuestionsAnswers(question, answer as string, context);
-    }
-
-    // Display all questions and answers in the WebView after updating the data
-    const panel = vscode.window.createWebviewPanel(
-        'questionsAnswers',
-        'ChatGPT Questions and Answers',
-        vscode.ViewColumn.One,
-        {
-            enableScripts: true,
-        }
-    );
-
-    // Set the HTML content for the WebView
-    displayAllQuestionsAnswers(context, panel);
-
-    // Receive messages from the WebView
-    panel.webview.onDidReceiveMessage((message) => {
-        if (message.command === 'getQuestionsAnswers') {
-            displayAllQuestionsAnswers(context, panel);
-        }
-    });
-};
-
-// Function to get the content of the HTML string for the WebView
 function getWebviewContent(qaArray: { question: string; answer: string; }[]): string {
     const questionsAnswersHTML = `
     <!DOCTYPE html>
@@ -121,11 +63,7 @@ function getWebviewContent(qaArray: { question: string; answer: string; }[]): st
     </body>
     </html>
 `;
-
     return questionsAnswersHTML;
 }
 
-
-module.exports = {
-    askChatGPTAQuestion,
-}
+export { getWebviewContent };
