@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import { getChatGPTResponse } from '../e_modifySelectedText/gpt';
 import { getWebviewContent } from './getWebviewContent'; // Import the getWebviewContent function from the new file
-
+import {addFilesToQuestion} from "./addFilesToQuestion";
 async function showInputBox(): Promise<string | undefined> {
     return vscode.window.showInputBox({
         prompt: "Ask ChatGPT a question",
@@ -30,7 +30,8 @@ function displayAllQuestionsAnswers(context: vscode.ExtensionContext, panel: vsc
 
 export async function askChatGPTAQuestion(context: vscode.ExtensionContext){
     const question = await showInputBox();
-    const answer = await getChatGPTResponse(question as string, context, [], [], []);
+    const questionWithFiles = addFilesToQuestion(question);
+    const answer = await getChatGPTResponse(questionWithFiles as string, context, [], [], []);
     if (question != undefined){
         addToGPTQuestionsAnswers(question, answer as string, context);
     }
