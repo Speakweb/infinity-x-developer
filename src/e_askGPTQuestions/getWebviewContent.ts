@@ -31,10 +31,17 @@ function getWebviewContent(qaArray: { question: string; answer: string; }[]): st
     <body>
         <h1>ChatGPT Questions and Answers</h1>
         <ul id="qaList">
-            ${qaArray.map(({ question, answer }) => `<li><b>Q:</b> ${question.replace(/\n/g, '<br>')}<br><b>A:</b> ${answer.replace(/\n/g, '<br>')}</li>`).join('')}
+            <pre id="code"></pre>
         </ul>
         <script>
-            vscode = acquireVsCodeApi();
+            const vscode = acquireVsCodeApi();
+            const qaArray = ${JSON.stringify(qaArray)}; // Convert the array to JSON
+            let stringToDisplay = '';
+            qaArray.forEach(({ question, answer }) => {
+                stringToDisplay += \`<li><b>Q:</b> \${question.replace(/\\n/g, '<br>')}<br><b>A:</b> \${answer.replace(/\\n/g, '<br>')}<br></li>\`;
+            });
+            const docVar = document.getElementById("code");
+            docVar.innerHTML = stringToDisplay;
 
             // Function to display all questions and answers in the WebView
             function displayAllQuestionsAnswers() {

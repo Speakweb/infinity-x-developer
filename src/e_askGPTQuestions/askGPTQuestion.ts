@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import { getChatGPTResponse } from '../e_modifySelectedText/gpt';
 import { getWebviewContent } from './getWebviewContent'; // Import the getWebviewContent function from the new file
 import {addFilesToQuestion} from "./addFilesToQuestion";
+import { writeToConsole } from '../textFormatting/writeToConsole';
 async function showInputBox(): Promise<string | undefined> {
     return vscode.window.showInputBox({
         prompt: "Ask ChatGPT a question",
@@ -11,8 +12,9 @@ async function showInputBox(): Promise<string | undefined> {
 }
 
 function addToGPTQuestionsAnswers(question: string, answer: string, context: vscode.ExtensionContext) {
-    const existingData = context.globalState.get("GPTQuestionsAnswers") || "{}";
+    const existingData =  context.globalState.get("GPTQuestionsAnswers") || "{}";
     const parsedData = JSON.parse(existingData as string);
+    context.globalState.update("GPTQuestionsAnswers", "{}")
     if (!parsedData[question]){
         parsedData[question] = answer;
         const updatedData = JSON.stringify(parsedData);
@@ -30,10 +32,13 @@ function displayAllQuestionsAnswers(context: vscode.ExtensionContext, panel: vsc
 
 export async function askChatGPTAQuestion(context: vscode.ExtensionContext){
     const question = await showInputBox();
-    const questionWithFiles = addFilesToQuestion(question);
-    const answer = await getChatGPTResponse(questionWithFiles as string, context, [], [], []);
+    const questionWithFiles = await addFilesToQuestion(question as string);
+
+    vscode.window.showInformationMessage(questionWithFiles as unknown as string);
+    const answer =  await getChatGPTResponse(question as string, context, [], [], []);
+    vscode.window.showInformationMessage(answer as string);
     if (question != undefined){
-        addToGPTQuestionsAnswers(question, answer as string, context);
+        addToGPTQuestionsAnswers(questionWithFiles, answer as string, context);
     }
 
     // Display all questions and answers in the WebView after updating the data
