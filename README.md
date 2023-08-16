@@ -1,71 +1,41 @@
-# Speakweb README
+# INFINITY X DEVELOPER README
 
-This is the README for your extension "Speakweb". After writing up a brief description, we recommend including the following sections.
+## Console Output Guide ( DEVELOPER USE ONLY )
+### Usage
+   Import writeToConsole from `textFormatting/writeToConsole.ts`
+   Call the function `writeToConsole( outputstring: "TEXT_TO_OUTPUT", consoleName: "CONSOLE_NAME")` with the following variable(s).
+   *Note: `consoleName`  is optional and has a default value.*
 
-## Features
+### Viewing console output
+1. Click on “Terminal” in the top left quadrant of the screen.
+2. Select “New Terminal” from the drop-down menu.
+3. Select “OUTPUT” in the window that pops up at the bottom of the screen.
+4. Open the dropdown menu in the top left of the “OUTPUT” window.
+5. If a console name was specified, select that name. Otherwise, select “Console Output”.
 
-Describe specific features of your extension including screenshots of your extension in action. Image paths are relative to this README file.
+## Global State Variables Guide
+### Register command
+   Open your extension’s `package.json` file.
+   If the "contributes" field doesn't exist, add it to your `package.json`:
 
-For example if there is an image subfolder under your extension project workspace:
-
-\!\[feature X\]\(images/feature-x.png\)
-
-> Tip: Many popular extensions utilize animations. This is an excellent way to show off your extension! We recommend short, focused animations that are easy to follow.
-
-## Requirements
-
-If you have any requirements or dependencies, add a section describing those and how to install and configure them.
-
-## Extension Settings
-
-Include if your extension adds any VS Code settings through the `contributes.configuration` extension point.
-
-For example:
-
-This extension contributes the following settings:
-
-* `myExtension.enable`: Enable/disable this extension.
-* `myExtension.thing`: Set to `blah` to do something.
-
-## Known Issues
-
-Calling out known issues can help limit users opening duplicate issues against your extension.
-
-## Release Notes
-
-Users appreciate release notes as you update your extension.
-
-### 1.0.0
-
-Initial release of ...
-
-### 1.0.1
-
-Fixed issue #.
-
-### 1.1.0
-
-Added features X, Y, and Z.
-
----
-
-## Following extension guidelines
-
-Ensure that you've read through the extensions guidelines and follow the best practices for creating your extension.
-
-* [Extension Guidelines](https://code.visualstudio.com/api/references/extension-guidelines)
-
-## Working with Markdown
-
-You can author your README using Visual Studio Code. Here are some useful editor keyboard shortcuts:
-
-* Split the editor (`Cmd+\` on macOS or `Ctrl+\` on Windows and Linux).
-* Toggle preview (`Shift+Cmd+V` on macOS or `Shift+Ctrl+V` on Windows and Linux).
-* Press `Ctrl+Space` (Windows, Linux, macOS) to see a list of Markdown snippets.
-
-## For more information
-
-* [Visual Studio Code's Markdown Support](http://code.visualstudio.com/docs/languages/markdown)
-* [Markdown Syntax Reference](https://help.github.com/articles/markdown-basics/)
-
-**Enjoy!**
+   ```json
+   "contributes": {
+       "commands": [
+           {
+               "command": "extension.VSCGlobalStateEditor",
+               "title": "Edit Global State Variables"
+           }
+       ]
+   }
+   ```
+### Add keybinding
+  Press `CTRL + SHIFT + M`
+  Search for `Preferences: Open Keyboard Shortcuts (JSON)`
+  Paste the following into the array inside keybindings.json:
+   ```json
+  {
+   "key": "YOUR_KEYBINDING_HERE",
+   "command": "extension.VSCGlobalStateEditor"
+  }
+   ```
+   Example key binding: `ctrl+shift+alt+y`
